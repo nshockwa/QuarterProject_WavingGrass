@@ -304,17 +304,6 @@ public:
 
 	}
 
-	//typedef std::pair<glm::vec3, glm::vec3> vec3pair;
-	//struct distCalc {
-	//	float distance;
-	//	vec3 pos;
-	//};
-
-	//bool compareDistance(distCalc A, distCalc B) {
-	//	return distance( mycam.pos) < distance(B, mycam.pos);
-	//}
-	/*Note that any gl calls must always happen after a GL state is initialized */
-
 	void initGeom()
 	{
 		
@@ -598,11 +587,9 @@ public:
 
 
 
-		glGenBuffers(1, &instanceVBO);
-		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * GRASS_ARR_SIZE, &grassPositions[0], GL_STATIC_DRAW);
-
+		
 		int idx = 0;
+		// init grass sort obj
 		for (int x = -(sqrt(GRASS_ARR_SIZE)) / 2; x < (sqrt(GRASS_ARR_SIZE)) / 2; x++) {
 			for (int z = -(sqrt(GRASS_ARR_SIZE)) / 2; z < (sqrt(GRASS_ARR_SIZE)) / 2; z++) {
 				grassCalc[idx].pos = glm::vec3(x *0.5, 0.0f, z *0.5);
@@ -610,12 +597,20 @@ public:
 				idx++;
 			}
 		}
-		sort(&grassCalc[0], &grassCalc[GRASS_ARR_SIZE], disComp);	//init rectangle mesh (2 triangles) for the post processing
+		// sort grass by distance
+		sort(&grassCalc[0], &grassCalc[GRASS_ARR_SIZE], disComp);
 		idx = 0;
+
+		// copy into 1D array
 		for (size_t i = 0; i != GRASS_ARR_SIZE; ++i)
 		{
 			grassPositions[idx++] = grassCalc[i].pos;
 		}
+
+		//do instance prep
+
+		glGenBuffers(1, &instanceVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 		glBufferData(GL_ARRAY_BUFFER, GRASS_ARR_SIZE * sizeof(glm::vec3), grassPositions, GL_STATIC_DRAW);
 		int position_loc = glGetAttribLocation(prog->pid, "instancePosOffset");
 		for (size_t i = 0; i != GRASS_ARR_SIZE; ++i)
@@ -626,6 +621,9 @@ public:
 		}
 
 		glBindVertexArray(0);
+
+
+		/* debugging */
 		//cout << "unSorted Array looks like this." << endl;
 		//cout << "unSorted Array looks like this." << endl;
 		//cout << "unSorted Array looks like this." << endl;
@@ -720,8 +718,6 @@ public:
 
 		mycam.process();
 
-
-
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -734,6 +730,7 @@ public:
 
 		// Create the matrix stacks - please leave these alone for now
 		
+
 		glm::mat4 V, M, P; //View, Model and Perspective matrix
 		V = glm::mat4(1);
 		M = glm::mat4(1);
@@ -754,25 +751,27 @@ public:
 		V = mycam.get_viewmatrix();
 		mouse.process(windowManager->getHandle(), &mycam.rot);
 
+
+
+		//Height Prog...
 		heightshader->bind();
+		//height shader depth func different from grass
 		glDepthFunc(GL_LESS);
-
-
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//translate whole height mesh
 		glm::mat4 TransY = glm::translate(glm::mat4(1.0f), glm::vec3(-50.0f, -3.0f, -50));
 		M = TransY;
-		glUniformMatrix4fv(heightshader->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniformMatrix4fv(heightshader->getUniform("P"), 1, GL_FALSE, &P[0][0]);
-		glUniformMatrix4fv(heightshader->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-
-
+		//camera offset to be used in shaders for repeating nature
 		vec3 offset = mycam.pos;
 		offset.y = 0;
 		offset.x = (int)offset.x;
 		offset.z = (int)offset.z;
-		cout << offset.x << endl;
+		//cout << offset.x << endl;
+		glUniformMatrix4fv(heightshader->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniformMatrix4fv(heightshader->getUniform("P"), 1, GL_FALSE, &P[0][0]);
+		glUniformMatrix4fv(heightshader->getUniform("V"), 1, GL_FALSE, &V[0][0]);
 		glUniform3fv(heightshader->getUniform("camoff"), 1, &offset[0]);
 		glUniform3fv(heightshader->getUniform("campos"), 1, &mycam.pos[0]);
+		//draw mesh with textures
 		glBindVertexArray(VertexArrayID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBufferIDBox);
 		glActiveTexture(GL_TEXTURE0);
@@ -780,25 +779,29 @@ public:
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, Texture);
 		glDrawElements(GL_TRIANGLES, MESHSIZE*MESHSIZE * 6, GL_UNSIGNED_SHORT, (void*)0);
-
 		heightshader->unbind();
 
 
 
-		// Draw the box using GLSL.
+		//Grass Prog...
 		prog->bind();
-		
-		
+		//grass shader depth func different from height
 		glDepthFunc(GL_NOTEQUAL);
+		float time = glfwGetTime();
+		vec3 wind = vec3(0.0, 1.0, 10.0);
+		TransY = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, -0.0f));
+		M = TransY;
+		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		//send the matrices to the shaders
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, &P[0][0]);
 		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-
 		glUniform3fv(prog->getUniform("campos"), 1, &mycam.pos[0]);
-		
-		
-
-
+	
+		glUniform3fv(prog->getUniform("camoff"), 1, &offset[0]);
+		glUniform3fv(prog->getUniform("campos"), 1, &mycam.pos[0]);
+		glUniform1fv(prog->getUniform("timeStamp"), 1, &time);
+		glUniform3fv(prog->getUniform("wind"), 1, &wind[0]);
+		//send over textures
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, grassTex[0]);
 		glActiveTexture(GL_TEXTURE1);
@@ -819,25 +822,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, grassTex[8]);
 		glActiveTexture(GL_TEXTURE9);
 		glBindTexture(GL_TEXTURE_2D, grassTex[9]);
-
-		vec3 offset2 = mycam.pos;
-		offset2.y = 0;
-		offset2.x = (int)offset2.x;
-		offset2.z = (int)offset2.z;
-		float time = glfwGetTime();
-		vec3 wind = vec3(0.0, 1.0, 10.0);
-		glUniform3fv(prog->getUniform("camoff"), 1, &offset2[0]);
-		glUniform3fv(prog->getUniform("campos"), 1, &mycam.pos[0]);
-		glUniform1fv(prog->getUniform("timeStamp"), 1, &time);
-		glUniform3fv(prog->getUniform("wind"), 1, &wind[0]);
-
-
-
-
-		TransY = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.0f, -0.0f));
-		//glm::mat4 Rot = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0, 1.0f));
-		M = TransY;
-		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		//draw instances
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, GRASS_ARR_SIZE);
 
