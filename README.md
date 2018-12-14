@@ -23,7 +23,7 @@ alt="Click the explore the scene further" width="800" height="600" border="10" /
 
 ### [See the full presentation and step by step progression here](https://docs.google.com/presentation/d/10r9on5YsFGE0vZUnZCP3w_MOhXCNGgPbZYFf-CWu4Io/edit?usp=sharing)
 
-### [Head back to the MRL website](https://mixedrealitylab.io/projects2.html)
+### [Head back to the MRL website](http://mixedrealitylab.io/projects2.html)
 
 ### [Download Source](https://github.com/nshockwa/QuarterProject_WavingGrass/archive/master.zip)
 
