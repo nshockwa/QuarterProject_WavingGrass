@@ -1,5 +1,5 @@
 # Rendering An Endless Scene of Waving Grass
-![](https://github.com/nshockwa/QuarterProject_WavingGrass/blob/master/media/gif.gif)
+![](https://github.com/nshockwa/QuarterProject_WavingGrass/blob/master/media/optimizedgif.gif)
 
 
 For my final project in Christian Eckhardt's Grad Graphics Class (CSC572) I decided to implement an endless scene of waving grass using several techniques used in the class in addition to some new ones. The result looks great and can be used in any project. There still is a bit of optimization work to be done, which I plan on doing in the future. For now, reducing the number of grass textures used/billboards in the grid may suffice. 
