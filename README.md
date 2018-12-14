@@ -12,7 +12,7 @@ alt="Click the explore the scene further" width="800" height="600" border="10" /
 
 
 ## Techniques used: 
-* 2D billboards with various texturesz
+* 2D billboards with various textures
 * Instanced Rendering
 * Simple per vertex animation
 * Height map terrain and grass height based on consistent noise function across shaders 
